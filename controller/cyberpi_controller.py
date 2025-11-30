@@ -13,9 +13,27 @@ PASSWORD = "drivefast"
 UDP_PORT = 4210
 TARGET_IP = "192.168.4.2"  # ESP32 static IP in receiver sketch
 
+# Networking helpers
+def start_hotspot():
+    """Start CyberPi as an AP, tolerating firmware API differences."""
+    if hasattr(wifi, "start_ap"):
+        wifi.start_ap(SSID, PASSWORD)
+    elif hasattr(wifi, "start"):
+        # Older firmware exposes wifi.start for AP mode
+        wifi.start(SSID, PASSWORD)
+    else:
+        cyberpi.console.println("Wi-Fi AP start unavailable on this firmware")
+        return False
+
+    if hasattr(wifi, "set_hostname"):
+        wifi.set_hostname("cyberpi-remote")
+    elif hasattr(wifi, "set_host_name"):
+        wifi.set_host_name("cyberpi-remote")
+    return True
+
+
 # Networking
-wifi.start_ap(SSID, PASSWORD)
-wifi.set_hostname("cyberpi-remote")
+start_hotspot()
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(0)
