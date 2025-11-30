@@ -6,7 +6,7 @@ import cyberpi
 import json
 import socket
 import time
-import wifi
+from cyberpi import wifi
 
 SSID = "cyberpi-rc"
 PASSWORD = "drivefast"
