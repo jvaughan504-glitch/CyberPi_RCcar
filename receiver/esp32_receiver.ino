@@ -163,8 +163,8 @@ void driveDifferential(float throttle, float steering) {
 void loop() {
   int packetSize = udp.parsePacket();
   if (packetSize) {
-    StaticJsonDocument<128> doc;
-    char buffer[128];
+    StaticJsonDocument<192> doc;
+    char buffer[192];
     int len = udp.read(buffer, sizeof(buffer) - 1);
     if (len > 0) {
       buffer[len] = '\0';
@@ -172,13 +172,20 @@ void loop() {
       if (!err) {
         float throttle = doc["throttle"] | 0.0f;
         float steering = doc["steering"] | 0.0f;
+        float mix = doc["mix"] | 1.0f;            // optional channel mixing coefficient
+        int auxA = doc["aux_a"] | 0;               // optional aux channels from CyberPi buttons
+        int auxB = doc["aux_b"] | 0;
         throttle = clamp(throttle, -1.0f, 1.0f);
-        steering = clamp(steering, -1.0f, 1.0f);
+        steering = clamp(steering * clamp(mix, 0.0f, 2.0f), -1.0f, 1.0f);
         if (USE_RC_OUTPUTS) {
           driveRC(throttle, steering);
         } else {
           driveDifferential(throttle, steering);
         }
+
+        // Expose aux values for future expansion (e.g. spare PWM outputs)
+        (void)auxA;
+        (void)auxB;
         lastPacketMs = millis();
       }
     }
