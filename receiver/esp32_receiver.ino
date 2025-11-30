@@ -1,7 +1,13 @@
+// Forward declaration required so the Arduino preprocessor does not auto-generate
+// a prototype that references an unknown type. The full definition lives later
+// in the file alongside the parsing helpers.
+struct Command;
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <ESP32Servo.h>
+#include <esp32-hal-ledc.h>
 
 // Wi‑Fi credentials must match the CyberPi controller
 const char *ssid = "cyberpi-rc";
