@@ -2,7 +2,7 @@
 
 This project shows how to build an RC car that uses a Makeblock CyberPi as the handheld controller and an ESP32 as the receiver/motor driver interface. The repository contains:
 
-- `controller/` – CyberPi MicroPython example that reads the built-in accelerometer and buttons, then broadcasts steering/throttle data over Wi‑Fi using UDP.
+- `controller/` – CyberPi MicroPython example that reads the built-in accelerometer and buttons, offers on-device endpoint/mix tuning, then broadcasts steering/throttle data (plus aux channels) over Wi‑Fi using UDP.
 - `receiver/` – ESP32 Arduino sketch that connects to the controller's Wi‑Fi access point, decodes the UDP commands, and drives either a steering servo + bidirectional ESC (default) or two DC motors via an H-bridge (L298N/L9110S/DRV8833).
 
 ## Hardware overview
@@ -11,6 +11,7 @@ This project shows how to build an RC car that uses a Makeblock CyberPi as the h
    - Powered by its internal battery.
    - Uses built-in Wi‑Fi to host an access point (default SSID `cyberpi-rc`) that the ESP32 joins.
    - Uses the accelerometer to steer (tilt left/right) and the B button to throttle forward. The A button enables reverse.
+   - Hold **A + B** to open the on-device menu to adjust steering/throttle end points and channel mixing. Aux channels mirror the A/B button state in the payload for expansion on the receiver.
 
 2. **Receiver (ESP32)**
    - Connects to the CyberPi access point.
@@ -24,17 +25,19 @@ This project shows how to build an RC car that uses a Makeblock CyberPi as the h
 The controller sends a small JSON blob 20 times per second:
 
 ```json
-{"throttle": 0.6, "steering": -0.25}
+{"throttle": 0.6, "steering": -0.25, "mix": 1.0, "aux_a": 0, "aux_b": 1}
 ```
 
 - `throttle`: `-1.0` (full reverse) to `1.0` (full forward)
 - `steering`: `-1.0` (full left) to `1.0` (full right)
+- `mix`: optional steering mix factor from the controller menu (default `1.0`)
+- `aux_a`/`aux_b`: optional auxiliary channels mapped to the A/B buttons
 
 Packets are sent via UDP to `192.168.4.2:4210` by default (the ESP32 static IP once connected to the CyberPi AP).
 
 ## Quick start
 
-1. Flash the ESP32 with the sketch in `receiver/esp32_receiver.ino` using the Arduino IDE or PlatformIO.
+1. Flash the ESP32 with the sketch in `receiver/esp32_receiver.ino` using the Arduino IDE or PlatformIO. No extra Arduino libraries are required beyond the ESP32 board support and `ESP32Servo` (bundled with the board package).
 2. Copy `controller/cyberpi_controller.py` to the CyberPi (Makeblock mBlock -> Upload). The script starts a Wi‑Fi AP and begins sending packets.
 3. Power the RC car and CyberPi. When the ESP32 joins the AP, tilting the CyberPi steers; holding **B** drives forward, and holding **A** drives backward.
 
