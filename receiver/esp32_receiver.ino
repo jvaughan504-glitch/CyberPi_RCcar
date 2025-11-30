@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
-#include <ArduinoJson.h>
 #include <ESP32Servo.h>
 
 // Wi‑Fi credentials must match the CyberPi controller
@@ -160,23 +159,54 @@ void driveDifferential(float throttle, float steering) {
   writeMotor(CHANNEL_RIGHT_FWD, CHANNEL_RIGHT_REV, right);
 }
 
+struct Command {
+  float throttle = 0.0f;
+  float steering = 0.0f;
+  float mix = 1.0f;
+  int auxA = 0;
+  int auxB = 0;
+};
+
+bool extractFloat(const char *json, const char *key, float &out) {
+  const char *pos = strstr(json, key);
+  if (!pos) return false;
+  pos = strchr(pos, ':');
+  if (!pos) return false;
+  out = atof(pos + 1);
+  return true;
+}
+
+bool extractInt(const char *json, const char *key, int &out) {
+  const char *pos = strstr(json, key);
+  if (!pos) return false;
+  pos = strchr(pos, ':');
+  if (!pos) return false;
+  out = atoi(pos + 1);
+  return true;
+}
+
+bool parseCommand(const char *json, Command &cmd) {
+  // Expected payload shape: {"throttle":0.6,"steering":-0.25,"mix":1.0,"aux_a":0,"aux_b":1}
+  bool ok = true;
+  ok &= extractFloat(json, "throttle", cmd.throttle);
+  ok &= extractFloat(json, "steering", cmd.steering);
+  ok &= extractFloat(json, "mix", cmd.mix);
+  ok &= extractInt(json, "aux_a", cmd.auxA);
+  ok &= extractInt(json, "aux_b", cmd.auxB);
+  return ok;
+}
+
 void loop() {
   int packetSize = udp.parsePacket();
   if (packetSize) {
-    StaticJsonDocument<192> doc;
     char buffer[192];
     int len = udp.read(buffer, sizeof(buffer) - 1);
     if (len > 0) {
       buffer[len] = '\0';
-      DeserializationError err = deserializeJson(doc, buffer);
-      if (!err) {
-        float throttle = doc["throttle"] | 0.0f;
-        float steering = doc["steering"] | 0.0f;
-        float mix = doc["mix"] | 1.0f;            // optional channel mixing coefficient
-        int auxA = doc["aux_a"] | 0;               // optional aux channels from CyberPi buttons
-        int auxB = doc["aux_b"] | 0;
-        throttle = clamp(throttle, -1.0f, 1.0f);
-        steering = clamp(steering * clamp(mix, 0.0f, 2.0f), -1.0f, 1.0f);
+      Command cmd;
+      if (parseCommand(buffer, cmd)) {
+        float throttle = clamp(cmd.throttle, -1.0f, 1.0f);
+        float steering = clamp(cmd.steering * clamp(cmd.mix, 0.0f, 2.0f), -1.0f, 1.0f);
         if (USE_RC_OUTPUTS) {
           driveRC(throttle, steering);
         } else {
@@ -184,8 +214,8 @@ void loop() {
         }
 
         // Expose aux values for future expansion (e.g. spare PWM outputs)
-        (void)auxA;
-        (void)auxB;
+        (void)cmd.auxA;
+        (void)cmd.auxB;
         lastPacketMs = millis();
       }
     }

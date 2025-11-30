@@ -37,7 +37,7 @@ Packets are sent via UDP to `192.168.4.2:4210` by default (the ESP32 static IP o
 
 ## Quick start
 
-1. Flash the ESP32 with the sketch in `receiver/esp32_receiver.ino` using the Arduino IDE or PlatformIO.
+1. Flash the ESP32 with the sketch in `receiver/esp32_receiver.ino` using the Arduino IDE or PlatformIO. No extra Arduino libraries are required beyond the ESP32 board support and `ESP32Servo` (bundled with the board package).
 2. Copy `controller/cyberpi_controller.py` to the CyberPi (Makeblock mBlock -> Upload). The script starts a Wi‑Fi AP and begins sending packets.
 3. Power the RC car and CyberPi. When the ESP32 joins the AP, tilting the CyberPi steers; holding **B** drives forward, and holding **A** drives backward.
 
