@@ -7,7 +7,7 @@ struct Command;
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <ESP32Servo.h>
-#include <driver/ledc.h>
+#include <esp32-hal-ledc.h>
 
 // Wi‑Fi credentials must match the CyberPi controller
 const char *ssid = "cyberpi-rc";
